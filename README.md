@@ -1,12 +1,9 @@
-# Snowflake
-[![Build Status](https://travis-ci.org/hydrogen-dev/smart-contracts.svg?branch=master)](https://travis-ci.org/hydrogen-dev/smart-contracts)
-[![Coverage Status](https://coveralls.io/repos/github/hydrogen-dev/smart-contracts/badge.svg?branch=master)](https://coveralls.io/github/hydrogen-dev/smart-contracts?branch=master)
+# Snowflake Invoicing
 
 ## Introduction
-Snowflake is an [ERC-1484 `Provider`](https://erc1484.org/) that provides on-/off-chain identity management. For more details, see [our whitepaper](https://github.com/hydrogen-dev/hydro-docs/tree/master/Snowflake).
+https://github.com/HydroBlockchain/hcdp/issues/254
 
-##
-[Try the demo front-end](https://hydroblockchain.github.io/snowflake-dashboard/)!
+The resolver is located at `contracts/resolvers/Invoicing.sol`.
 
 ## Testing With Truffle
 - This folder has a suite of tests created through [Truffle](https://github.com/trufflesuite/truffle).
