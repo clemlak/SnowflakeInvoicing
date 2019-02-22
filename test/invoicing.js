@@ -5,6 +5,17 @@ const Invoicing = artifacts.require('./resolvers/Invoicing.sol')
 
 let instances
 let user
+let ein;
+
+const invoice = {
+  customers: [1],
+  amount: 1000,
+  allowPartialPayment: true,
+  minimumAmountDue: 10,
+  paymentTerm: 0,
+  term: 0,
+};
+
 contract('Testing Invoicing', function (accounts) {
   const owner = {
     public: accounts[0]
@@ -66,6 +77,37 @@ contract('Testing Invoicing', function (accounts) {
   describe('Checking Resolver Functionality', async () => {
     it('deploy Invoicing', async () => {
       instances.Invoicing = await Invoicing.new(instances.Snowflake.address)
+    });
+
+    it('Should add Invoicing as a new resolver', async () => {
+      const allowance = web3.utils.toBN(1e18);
+
+      await instances.Snowflake.addResolver(
+        instances.Invoicing.address, true, allowance, '0x00', {
+          from: user.address,
+        },
+      );
+    });
+
+    it('Should create a draft invoice', () => instances.Invoicing.createDraftInvoice(
+      invoice.customers,
+      invoice.amount,
+      invoice.allowPartialPayment,
+      invoice.minimumAmountDue,
+      invoice.paymentTerm,
+      invoice.term, {
+        from: user.address,
+      },
+    ));
+
+    it('Should get the ein of the user', () => instances.IdentityRegistry.getEIN(user.address)
+      .then((res) => {
+        ein = res;
+      }));
+
+    it('Should get the invoices create by the user', () => instances.Invoicing.getInvoicesFromMerchant(ein)
+      .then((invoices) => {
+        console.log(invoices);
+      }));
     })
-  })
 })
