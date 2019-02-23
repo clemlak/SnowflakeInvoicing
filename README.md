@@ -1,8 +1,10 @@
 # Snowflake Invoicing
 
 ## Introduction
-https://github.com/HydroBlockchain/hcdp/issues/254
+Snowflake Invoicing allows a business to invoice another business or consumer for a specific amount, on a specified date, and in a certain amount of Hydro.
+This Ethereum smart contract is built on top of [Hydro Snowflake](https://medium.com/hydrogen-api/examining-erc-1484-hydro-snowflake-cc3753a5ff52) and was defined [here](https://github.com/HydroBlockchain/hcdp/issues/254).
 
+## Usage
 The resolver is located at `contracts/resolvers/Invoicing.sol`.
 
 ## Testing With Truffle
