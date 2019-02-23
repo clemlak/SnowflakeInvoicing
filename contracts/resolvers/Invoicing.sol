@@ -180,6 +180,20 @@ contract Invoicing is SnowflakeResolver {
         invoices[invoiceId].note = note;
     }
 
+    function validateInvoice(uint256 invoiceId) public onlyMerchant() {
+        require(
+            invoices[invoiceId].status == Status.Draft,
+            "This invoice is not a draft anymore"
+        );
+
+        require(
+            invoices[invoiceId].customers.length > 0,
+            "This invoice does not have any customer"
+        );
+
+        invoices[invoiceId].status = Status.Unpaid;
+    }
+
     /**
      * @dev Gets invoice info
      * @param invoiceId The id of the invoice
