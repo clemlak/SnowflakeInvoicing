@@ -147,15 +147,36 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should update the payment data of invoice 0', () => instances.Invoicing.updateInvoicePayment(
       0,
-      1000,
+      2000,
       true,
       100,
-      0,
-      0,
+      3,
+      90,
       'Pay asap',
       'Hello', {
         from: user.address,
       },
     ));
+
+    it('Should get the updated info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.customers[0].toString(), '5', 'Info customers is wrong');
+        assert.equal(info.customers[1].toString(), '6', 'Info customers is wrong');
+      }));
+
+    it('Should get the updated details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.equal(details.amount.toString(), '2000', 'Invoice amount is wrong');
+        assert.equal(details.allowPartialPayment, true, 'Invoice partial payment allowance is wrong');
+        assert.equal(details.minimumAmountDue.toString(), '100', 'Invoice minimum amount due is wrong');
+        assert.equal(details.paymentTerm.toString(), '3', 'Invoice payment term is wrong');
+        assert.equal(details.term.toString(), '90', 'Invoice term is wrong');
+      }));
+
+    it('Should get the additional details of invoice 0', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
+      .then((additionalDetails) => {
+        assert.equal(additionalDetails.additionalTerms, 'Pay asap', 'Invoice additional terms are wrong');
+        assert.equal(additionalDetails.note, 'Hello', 'Invoice note is wrong');
+      }));
   })
 })
