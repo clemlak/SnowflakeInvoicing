@@ -6,6 +6,7 @@ import "../SnowflakeResolver.sol";
 import "../interfaces/IdentityRegistryInterface.sol";
 import "../interfaces/HydroInterface.sol";
 import "../interfaces/SnowflakeInterface.sol";
+import "../zeppelin/math/SafeMath.sol";
 
 
 /**
@@ -180,6 +181,10 @@ contract Invoicing is SnowflakeResolver {
         invoices[invoiceId].note = note;
     }
 
+    /**
+     * @dev Validates an invoice (from draft to unpaid)
+     * @param invoiceId The id of the invoice
+     */
     function validateInvoice(uint256 invoiceId) public onlyMerchant() {
         require(
             invoices[invoiceId].status == Status.Draft,
@@ -192,6 +197,56 @@ contract Invoicing is SnowflakeResolver {
         );
 
         invoices[invoiceId].status = Status.Unpaid;
+    }
+
+    function payInvoice(uint256 invoiceId, uint256 amount) public {
+        require(
+            invoices[invoiceId].status == Status.Unpaid
+            || invoices[invoiceId].status == Status.PartiallyPaid,
+            "This invoice cannot be paid anymore"
+        );
+
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            includes(invoices[invoiceId].customers, ein) == true,
+            "Sender cannot pay this invoice"
+        );
+
+        if (invoices[invoiceId].allowPartialPayment == false) {
+            require(
+                ammount == invoices[invoiceId].amount,
+                "Invoice does not allow partial payment"
+            );
+        } else {
+            require(
+                amount >= invoices[invoiceId].minimumAmountDue,
+                "Sent amount is not sufficient"
+            );
+        }
+
+        /* Should we prevent customers from paying more than expected?
+        require(
+            SafeMath.add(amount, invoices[invoiceId].paidAmount) <= invoices[invoiceId].amount,
+            "Sent amount is too high"
+        );
+        */
+
+        invoices[invoiceId].paidAmount = SafeMath.add(amount, invoices[invoiceId].paidAmount);
+
+        if (invoices[invoiceId].paidAmount == invoices[invoiceId].amount) {
+            invoices[invoiceId].status = Status.Paid;
+        } else {
+            if (invoices[invoiceId].status == Status.Unpaid) {
+                invoices[invoiceId].status = Status.PartiallyPaid;
+            }
+        }
+
+        snowflake.transferSnowflakeBalanceFrom(ein, invoices[invoiceId].merchant, amount);
     }
 
     /**
@@ -269,6 +324,16 @@ contract Invoicing is SnowflakeResolver {
      */
     function getInvoicesFromCustomer(uint256 ein) public view returns (uint256[] memory) {
         return customersToInvoices[ein];
+    }
+
+    function includes(uint256[] memory a, uint256 b) internal pure returns (bool) {
+        for (uint256 i = 0; i < a.length; i += 1) {
+            if (a[i] == b) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     modifier onlyMerchant() {
