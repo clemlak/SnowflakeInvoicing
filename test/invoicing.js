@@ -115,7 +115,7 @@ contract('Testing Invoicing', function (accounts) {
         assert.containsAllKeys(info, ['status', 'date', 'merchant', 'customers'], 'Invoice info is wrong');
         assert.equal(info.status, 0, 'Info status is wrong');
         assert.isString(info.date.toString(), 'Info date is wrong');
-        assert.equal(info.merchant.toString(), '1', 'Info merchant is wrong');
+        assert.equal(info.merchant.toString(), ein.toString(), 'Info merchant is wrong');
         assert.equal(info.customers[0].toString(), '2', 'Info customers is wrong');
       }));
 
