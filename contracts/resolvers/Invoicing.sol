@@ -219,7 +219,7 @@ contract Invoicing is SnowflakeResolver {
 
         if (invoices[invoiceId].allowPartialPayment == false) {
             require(
-                ammount == invoices[invoiceId].amount,
+                amount == invoices[invoiceId].amount,
                 "Invoice does not allow partial payment"
             );
         } else {
