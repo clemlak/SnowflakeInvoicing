@@ -97,7 +97,7 @@ contract Invoicing is SnowflakeResolver {
     function updateInvoiceAdditionalTerms(
         uint256 invoiceId,
         string memory additionalTerms
-    ) public {
+    ) public onlyMerchant() {
         require(
             invoices[invoiceId].status == Status.Draft,
             "The invoice is not a draft anymore"

@@ -132,19 +132,29 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(invoices.length, 1, "Invoices total is wrong");
       }));
 
-    it('Should get the info of the invoice', () => instances.Invoicing.getInvoiceInfo(0)
+    it('Should update the addition terms of invoice 0', () => instances.Invoicing.updateInvoiceAdditionalTerms(
+      0,
+      'Hello', {
+        from: user.address,
+      },
+    ));
+
+    it('Should get the info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
         assert.containsAllKeys(info, invoiceInfo, 'Invoice info is wrong');
       }));
 
-    it('Should get the details of the invoice', () => instances.Invoicing.getInvoiceDetails(0)
+    it('Should get the details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
       .then((details) => {
         assert.containsAllKeys(details, invoiceDetails, 'Invoice details are wrong');
       }));
 
-    it('Should get the additional details of the invoice', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
+    it('Should get the additional details of invoice 0', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
       .then((additionalDetails) => {
         assert.containsAllKeys(additionalDetails, invoiceAdditionalDetails, 'Invoice additional details are wrong');
+        assert.equal(additionalDetails.additionalTerms, 'Hello', 'Invoice additional terms are wrong');
       }));
+
+
   })
 })
