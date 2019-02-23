@@ -94,47 +94,73 @@ contract Invoicing is SnowflakeResolver {
         merchantsToInvoices[ein].push(invoiceId);
     }
 
+    function updateInvoiceAdditionalTerms(
+        uint256 invoiceId,
+        string memory additionalTerms
+    ) public {
+        require(
+            invoices[invoiceId].status == Status.Draft,
+            "The invoice is not a draft anymore"
+        );
+
+        invoices[invoiceId].additionalTerms = additionalTerms;
+    }
+
+    function getInvoiceInfo(uint256 invoiceId) public view returns (
+        Status status,
+        uint256 date,
+        uint256 merchant,
+        uint256[] memory customers
+    ) {
+        return (
+            invoices[invoiceId].status,
+            invoices[invoiceId].date,
+            invoices[invoiceId].merchant,
+            invoices[invoiceId].customers
+        );
+    }
+
+    function getInvoiceDetails(uint256 invoiceId) public view returns (
+        uint256 amount,
+        uint256 paidAmount,
+        uint256 refundedAmount,
+        bool allowPartialPayment,
+        uint256 minimumAmountDue,
+        Terms paymentTerm,
+        uint256 term
+    ) {
+        return (
+            invoices[invoiceId].amount,
+            invoices[invoiceId].paidAmount,
+            invoices[invoiceId].refundedAmount,
+            invoices[invoiceId].allowPartialPayment,
+            invoices[invoiceId].minimumAmountDue,
+            invoices[invoiceId].paymentTerm,
+            invoices[invoiceId].term
+        );
+    }
+
+    function getInvoicesAdditionalDetails(uint256 invoiceId) public view returns (
+        string memory additionalTerms,
+        string memory note
+    ) {
+        return (
+            invoices[invoiceId].additionalTerms,
+            invoices[invoiceId].note
+        );
+    }
+
     function getInvoicesFromMerchant(uint256 ein) public view returns (uint256[] memory) {
         return merchantsToInvoices[ein];
     }
 
-    /*
-    function createInvoice(
-        uint256 date,
-        uint256[] memory customers,
-        uint256 amount,
-        bool allowPartialPayment,
-        uint256 minimumAmountDue,
-        Terms paymentTerm,
-        uint256 term,
-        string memory additionalTerms,
-        string memory note
-    ) public {
+    modifier onlyMerchant() {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
 
         uint256 ein = identityRegistry.getEIN(msg.sender);
         require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
 
-        uint256 invoiceId = invoices.push(
-            Invoice({
-                status: Status.Draft,
-                date: date,
-                merchant: ein,
-                customers: customers,
-                amount: amount,
-                paidAmount: 0,
-                refundedAmount: 0,
-                allowPartialPayment: allowPartialPayment,
-                minimumAmountDue: minimumAmountDue,
-                paymentTerm: paymentTerm,
-                term: term,
-                additionalTerms: additionalTerms,
-                note: note
-            })
-        ) - 1;
-
-        merchantsToInvoices[ein].push(invoiceId);
+        _;
     }
-    */
 }

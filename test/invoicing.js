@@ -8,12 +8,34 @@ let user
 let ein;
 
 const invoice = {
-  customers: [1],
+  customers: [1, 2],
   amount: 1000,
   allowPartialPayment: true,
   minimumAmountDue: 10,
   paymentTerm: 0,
   term: 0,
+};
+
+const invoiceInfo = {
+  status: 0,
+  date: 0,
+  merchant: 0,
+  customers: [],
+};
+
+const invoiceDetails = {
+  amount: 0,
+  paidAmount: 0,
+  refundedAmount: 0,
+  allowPartialPayment: false,
+  minimumAmountDue: 0,
+  paymentTerm: 0,
+  term: 0,
+};
+
+const invoiceAdditionalDetails = {
+  additionalTerms: '',
+  note: '',
 };
 
 contract('Testing Invoicing', function (accounts) {
@@ -107,7 +129,22 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should get the invoices create by the user', () => instances.Invoicing.getInvoicesFromMerchant(ein)
       .then((invoices) => {
-        console.log(invoices);
+        assert.equal(invoices.length, 1, "Invoices total is wrong");
       }));
-    })
+
+    it('Should get the info of the invoice', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.containsAllKeys(info, invoiceInfo, 'Invoice info is wrong');
+      }));
+
+    it('Should get the details of the invoice', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.containsAllKeys(details, invoiceDetails, 'Invoice details are wrong');
+      }));
+
+    it('Should get the additional details of the invoice', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
+      .then((additionalDetails) => {
+        assert.containsAllKeys(additionalDetails, invoiceAdditionalDetails, 'Invoice additional details are wrong');
+      }));
+  })
 })
