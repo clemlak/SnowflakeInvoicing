@@ -178,5 +178,14 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(additionalDetails.additionalTerms, 'Pay asap', 'Invoice additional terms are wrong');
         assert.equal(additionalDetails.note, 'Hello', 'Invoice note is wrong');
       }));
+
+    it('Should validate invoice 0', () => instances.Invoicing.validateInvoice(0, {
+      from: user.address,
+    }));
+
+    it('Should get the updated info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.status, 1, 'Info status is wrong');
+      }));
   })
 })
