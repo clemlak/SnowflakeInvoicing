@@ -8,34 +8,12 @@ let user
 let ein;
 
 const invoice = {
-  customers: [1, 2],
+  customers: [2],
   amount: 1000,
   allowPartialPayment: true,
   minimumAmountDue: 10,
   paymentTerm: 0,
   term: 0,
-};
-
-const invoiceInfo = {
-  status: 0,
-  date: 0,
-  merchant: 0,
-  customers: [],
-};
-
-const invoiceDetails = {
-  amount: 0,
-  paidAmount: 0,
-  refundedAmount: 0,
-  allowPartialPayment: false,
-  minimumAmountDue: 0,
-  paymentTerm: 0,
-  term: 0,
-};
-
-const invoiceAdditionalDetails = {
-  additionalTerms: '',
-  note: '',
 };
 
 contract('Testing Invoicing', function (accounts) {
@@ -127,9 +105,37 @@ contract('Testing Invoicing', function (accounts) {
         ein = res;
       }));
 
-    it('Should get the invoices create by the user', () => instances.Invoicing.getInvoicesFromMerchant(ein)
+    it('Should get the invoices created by the user', () => instances.Invoicing.getInvoicesFromMerchant(ein)
       .then((invoices) => {
         assert.equal(invoices.length, 1, "Invoices total is wrong");
+      }));
+
+    it('Should get the info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.containsAllKeys(info, ['status', 'date', 'merchant', 'customers'], 'Invoice info is wrong');
+        assert.equal(info.status, 0, 'Info status is wrong');
+        assert.isString(info.date.toString(), 'Info date is wrong');
+        assert.equal(info.merchant.toString(), '1', 'Info merchant is wrong');
+        assert.equal(info.customers[0].toString(), '2', 'Info customers is wrong');
+      }));
+
+    it('Should get the details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.containsAllKeys(details, ['amount', 'paidAmount', 'refundedAmount', 'allowPartialPayment', 'minimumAmountDue', 'paymentTerm', 'term'], 'Invoice details are wrong');
+        assert.equal(details.amount.toString(), '1000', 'Invoice amount is wrong');
+        assert.equal(details.paidAmount.toString(), '0', 'Invoice paid amount is wrong');
+        assert.equal(details.refundedAmount.toString(), '0', 'Invoice refunded amount is wrong');
+        assert.equal(details.allowPartialPayment, true, 'Invoice partial payment allowance is wrong');
+        assert.equal(details.minimumAmountDue.toString(), '10', 'Invoice minimum amount due is wrong');
+        assert.equal(details.paymentTerm.toString(), '0', 'Invoice payment term is wrong');
+        assert.equal(details.term.toString(), '0', 'Invoice term is wrong');
+      }));
+
+    it('Should get the additional details of invoice 0', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
+      .then((additionalDetails) => {
+        assert.containsAllKeys(additionalDetails, ['additionalTerms', 'note'], 'Invoice additional details are wrong');
+        assert.equal(additionalDetails.additionalTerms, '', 'Invoice additional terms are wrong');
+        assert.equal(additionalDetails.note, '', 'Invoice note is wrong');
       }));
 
     it('Should update the customers of invoice 0', () => instances.Invoicing.updateInvoiceCustomers(
@@ -151,24 +157,5 @@ contract('Testing Invoicing', function (accounts) {
         from: user.address,
       },
     ));
-
-    it('Should get the info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
-      .then((info) => {
-        assert.containsAllKeys(info, invoiceInfo, 'Invoice info is wrong');
-      }));
-
-    it('Should get the details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
-      .then((details) => {
-        assert.containsAllKeys(details, invoiceDetails, 'Invoice details are wrong');
-      }));
-
-    it('Should get the additional details of invoice 0', () => instances.Invoicing.getInvoicesAdditionalDetails(0)
-      .then((additionalDetails) => {
-        assert.containsAllKeys(additionalDetails, invoiceAdditionalDetails, 'Invoice additional details are wrong');
-        assert.equal(additionalDetails.additionalTerms, 'Pay asap', 'Invoice additional terms are wrong');
-        assert.equal(additionalDetails.note, 'Hello', 'Invoice note is wrong');
-      }));
-
-
   })
 })
