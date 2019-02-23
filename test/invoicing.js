@@ -125,11 +125,21 @@ contract('Testing Invoicing', function (accounts) {
     });
 
     it('Should add Invoicing as a new resolver', async () => {
-      const allowance = web3.utils.toBN(1e18);
+      const allowance = web3.utils.toWei('1000');
 
       await instances.Snowflake.addResolver(
         instances.Invoicing.address, true, allowance, '0x00', {
           from: user.address,
+        },
+      );
+    });
+
+    it('Should add Invoicing as a new resolver (customer)', async () => {
+      const allowance = web3.utils.toWei('1000');
+
+      await instances.Snowflake.addResolver(
+        instances.Invoicing.address, true, allowance, '0x00', {
+          from: customer.address,
         },
       );
     });
@@ -193,7 +203,7 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should update the payment data of invoice 0', () => instances.Invoicing.updateInvoicePayment(
       0,
-      2000,
+      1000,
       true,
       100,
       3,
