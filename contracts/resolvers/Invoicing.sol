@@ -154,6 +154,10 @@ contract Invoicing is SnowflakeResolver {
         return merchantsToInvoices[ein];
     }
 
+    function getInvoicesFromCustomer(uint256 ein) public view returns (uint256[] memory) {
+        return customersToInvoices[ein];
+    }
+
     modifier onlyMerchant() {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
