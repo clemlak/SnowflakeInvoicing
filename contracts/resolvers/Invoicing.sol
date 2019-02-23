@@ -94,6 +94,18 @@ contract Invoicing is SnowflakeResolver {
         merchantsToInvoices[ein].push(invoiceId);
     }
 
+    function updateInvoiceCustomers(
+        uint256 invoiceId,
+        uint256[] memory customers
+    ) public onlyMerchant() {
+        require(
+            invoices[invoiceId].status == Status.Draft,
+            "The invoice is not a draft anymore"
+        );
+
+        invoices[invoiceId].customers = customers;
+    }
+
     function updateInvoiceAdditionalTerms(
         uint256 invoiceId,
         string memory additionalTerms
