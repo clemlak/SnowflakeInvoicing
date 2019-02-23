@@ -100,22 +100,34 @@ contract Invoicing is SnowflakeResolver {
     ) public onlyMerchant() {
         require(
             invoices[invoiceId].status == Status.Draft,
-            "The invoice is not a draft anymore"
+            "This invoice is not a draft anymore"
         );
 
         invoices[invoiceId].customers = customers;
     }
 
-    function updateInvoiceAdditionalTerms(
+    function updateInvoicePayment(
         uint256 invoiceId,
-        string memory additionalTerms
+        uint256 amount,
+        bool allowPartialPayment,
+        uint256 minimumAmountDue,
+        Terms paymentTerm,
+        uint256 term,
+        string memory additionalTerms,
+        string memory note
     ) public onlyMerchant() {
         require(
             invoices[invoiceId].status == Status.Draft,
-            "The invoice is not a draft anymore"
+            "This invoice is not a draft anymore"
         );
 
+        invoices[invoiceId].amount = amount;
+        invoices[invoiceId].allowPartialPayment = allowPartialPayment;
+        invoices[invoiceId].minimumAmountDue = minimumAmountDue;
+        invoices[invoiceId].paymentTerm = paymentTerm;
+        invoices[invoiceId].term = term;
         invoices[invoiceId].additionalTerms = additionalTerms;
+        invoices[invoiceId].note = note;
     }
 
     function getInvoiceInfo(uint256 invoiceId) public view returns (
