@@ -354,5 +354,14 @@ contract('Testing Invoicing', function (accounts) {
       .then((details) => {
         assert.equal(details.refundedAmount.toString(), web3.utils.toWei('1000'), 'Invoice refunded amount is wrong');
       }));
+
+    it('Should cancel the invoice', () => instances.Invoicing.cancelInvoice(0, {
+      from: merchant.address,
+    }));
+
+    it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.status.toNumber(), Status.Canceled, 'Info status is wrong');
+      }));
   })
 })
