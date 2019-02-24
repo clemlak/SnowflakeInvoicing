@@ -284,6 +284,12 @@ contract Invoicing is SnowflakeResolver {
         snowflake.transferSnowflakeBalanceFrom(ein, invoices[invoiceId].merchant, amount);
     }
 
+    /**
+     * @dev Refunds a customer
+     * @param invoiceId The id of the invoice
+     * @param customer The ein of the customer
+     * @param amount The amount to refund
+     */
     function refundCustomer(uint256 invoiceId, uint256 customer, uint256 amount) public {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
@@ -311,7 +317,7 @@ contract Invoicing is SnowflakeResolver {
         invoices[invoiceId].refundedAmount = SafeMath.add(invoices[invoiceId].refundedAmount, amount);
 
         if (invoices[invoiceId].refundedAmount == invoices[invoiceId].amount) {
-            invoices[invoiceId].status = Status.PartiallyRefunded;
+            invoices[invoiceId].status = Status.Refunded;
         } else {
             if (invoices[invoiceId].status != Status.PartiallyRefunded) {
                 invoices[invoiceId].status = Status.PartiallyRefunded;
