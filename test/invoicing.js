@@ -256,5 +256,29 @@ contract('Testing Invoicing', function (accounts) {
       .then((details) => {
         assert.equal(details.paidAmount.toString(), '100', 'Invoice paid amount is wrong');
       }));
+
+    it('Should pay a part of invoice 0', () => instances.Invoicing.payInvoice(0, 900, {
+      from: customer.address,
+    }));
+
+    it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.status, 3, 'Info status is wrong');
+      }));
+
+    it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.equal(details.paidAmount.toString(), '1000', 'Invoice paid amount is wrong');
+      }));
+
+    it('Should get the deposit of user', () => instances.Snowflake.deposits(1)
+      .then((deposit) => {
+        console.log(deposit.toString());
+      }));
+
+    it('Should get the deposit of customer', () => instances.Snowflake.deposits(2)
+      .then((deposit) => {
+        console.log(deposit.toString());
+      }));
   })
 })
