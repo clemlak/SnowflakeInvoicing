@@ -137,7 +137,18 @@ contract Invoicing is SnowflakeResolver {
     function updateInvoiceCustomers(
         uint256 invoiceId,
         uint256[] memory customers
-    ) public onlyMerchant() {
+    ) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].merchant == ein,
+            "Sender is not the merchant"
+        );
+
         require(
             invoices[invoiceId].status == Status.Draft,
             "This invoice is not a draft anymore"
@@ -166,7 +177,18 @@ contract Invoicing is SnowflakeResolver {
         uint256 term,
         string memory additionalTerms,
         string memory note
-    ) public onlyMerchant() {
+    ) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].merchant == ein,
+            "Sender is not the merchant"
+        );
+
         require(
             invoices[invoiceId].status == Status.Draft,
             "This invoice is not a draft anymore"
@@ -185,7 +207,18 @@ contract Invoicing is SnowflakeResolver {
      * @dev Validates an invoice (from draft to unpaid)
      * @param invoiceId The id of the invoice
      */
-    function validateInvoice(uint256 invoiceId) public onlyMerchant() {
+    function validateInvoice(uint256 invoiceId) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].merchant == ein,
+            "Sender is not the merchant"
+        );
+
         require(
             invoices[invoiceId].status == Status.Draft,
             "This invoice is not a draft anymore"
@@ -200,12 +233,6 @@ contract Invoicing is SnowflakeResolver {
     }
 
     function payInvoice(uint256 invoiceId, uint256 amount) public {
-        require(
-            invoices[invoiceId].status == Status.Unpaid
-            || invoices[invoiceId].status == Status.PartiallyPaid,
-            "This invoice cannot be paid anymore"
-        );
-
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
 
@@ -214,7 +241,13 @@ contract Invoicing is SnowflakeResolver {
 
         require(
             includes(invoices[invoiceId].customers, ein) == true,
-            "Sender cannot pay this invoice"
+            "Sender is not the customer"
+        );
+
+        require(
+            invoices[invoiceId].status == Status.Unpaid
+            || invoices[invoiceId].status == Status.PartiallyPaid,
+            "This invoice cannot be paid anymore"
         );
 
         if (invoices[invoiceId].allowPartialPayment == false) {
@@ -246,7 +279,48 @@ contract Invoicing is SnowflakeResolver {
             }
         }
 
+        emit LogPayment(invoiceId, ein, amount);
+
         snowflake.transferSnowflakeBalanceFrom(ein, invoices[invoiceId].merchant, amount);
+    }
+
+    function refundCustomer(uint256 invoiceId, uint256 customer, uint256 amount) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].merchant == ein,
+            "Sender is not the merchant"
+        );
+
+        require(
+            invoices[invoiceId].status == Status.PartiallyPaid
+            || invoices[invoiceId].status == Status.Paid
+            || invoices[invoiceId].status == Status.PartiallyRefunded,
+            "This invoice cannot be paid anymore"
+        );
+
+        require(
+            includes(invoices[invoiceId].customers, customer) == true,
+            "The ein does not correspond to a customer"
+        );
+
+        invoices[invoiceId].refundedAmount = SafeMath.add(invoices[invoiceId].refundedAmount, amount);
+
+        if (invoices[invoiceId].refundedAmount == invoices[invoiceId].amount) {
+            invoices[invoiceId].status = Status.PartiallyRefunded;
+        } else {
+            if (invoices[invoiceId].status != Status.PartiallyRefunded) {
+                invoices[invoiceId].status = Status.PartiallyRefunded;
+            }
+        }
+
+        emit LogRefund(invoiceId, customer, amount);
+
+        snowflake.transferSnowflakeBalanceFrom(ein, customer, amount);
     }
 
     /**
@@ -334,15 +408,5 @@ contract Invoicing is SnowflakeResolver {
         }
 
         return false;
-    }
-
-    modifier onlyMerchant() {
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
-        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
-
-        uint256 ein = identityRegistry.getEIN(msg.sender);
-        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
-
-        _;
     }
 }
