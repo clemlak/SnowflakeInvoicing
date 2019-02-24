@@ -319,7 +319,7 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(deposit.toString(), web3.utils.toWei('0'), 'Merchant deposit is wrong');
       }));
 
-    it('Should refund the customer', () => instances.Invoicing.refundCustomer(
+    it('Should refund a part of the amount to the customer', () => instances.Invoicing.refundCustomer(
       0,
       customerEin,
       web3.utils.toWei('100'), {
@@ -335,6 +335,24 @@ contract('Testing Invoicing', function (accounts) {
     it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
       .then((details) => {
         assert.equal(details.refundedAmount.toString(), web3.utils.toWei('100'), 'Invoice refunded amount is wrong');
+      }));
+
+    it('Should refund the rest of the amount to the customer', () => instances.Invoicing.refundCustomer(
+      0,
+      customerEin,
+      web3.utils.toWei('900'), {
+        from: merchant.address,
+      },
+    ));
+
+    it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.status.toNumber(), Status.Refunded, 'Info status is wrong');
+      }));
+
+    it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.equal(details.refundedAmount.toString(), web3.utils.toWei('1000'), 'Invoice refunded amount is wrong');
       }));
   })
 })
