@@ -330,6 +330,25 @@ contract Invoicing is SnowflakeResolver {
     }
 
     /**
+     * @dev Cancels an invoice
+     * @param invoiceId The id of the invoice
+     */
+    function cancelInvoice(uint256 invoiceId) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].merchant == ein,
+            "Sender is not the merchant"
+        );
+
+        invoices[invoiceId].status = Status.Canceled;
+    }
+
+    /**
      * @dev Gets invoice info
      * @param invoiceId The id of the invoice
      * @return The status, date, merchant and customers of an invoice
