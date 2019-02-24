@@ -3,6 +3,24 @@ const { sign, verifyIdentity } = require('./utilities')
 
 const Invoicing = artifacts.require('./resolvers/Invoicing.sol')
 
+const Status = {
+  Draft: 0,
+  Unpaid: 1,
+  PartiallyPaid: 2,
+  Paid: 3,
+  PartiallyRefunded: 4,
+  Refunded: 5,
+  Canceled: 6,
+  Disputed: 7
+};
+
+const Terms = {
+  DueOnReceipt: 0,
+  DueOnDate: 1,
+  NoDueDate: 2,
+  NetD: 3,
+};
+
 let instances
 let merchant
 let merchantEin;
@@ -184,7 +202,7 @@ contract('Testing Invoicing', function (accounts) {
     it('Should get the info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
         assert.containsAllKeys(info, ['status', 'date', 'merchant', 'customers'], 'Invoice info is wrong');
-        assert.equal(info.status, 0, 'Info status is wrong');
+        assert.equal(info.status.toNumber(), Status.Draft, 'Info status is wrong');
         assert.isString(info.date.toString(), 'Info date is wrong');
         assert.equal(info.merchant.toString(), merchantEin.toString(), 'Info merchant is wrong');
         assert.equal(info.customers[0].toString(), '5', 'Info customers is wrong');
@@ -256,7 +274,7 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should get the updated info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
-        assert.equal(info.status, 1, 'Info status is wrong');
+        assert.equal(info.status.toNumber(), Status.Unpaid, 'Info status is wrong');
       }));
 
     it('Should pay a part of invoice 0', () => instances.Invoicing.payInvoice(
@@ -267,7 +285,7 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
-        assert.equal(info.status, 2, 'Info status is wrong');
+        assert.equal(info.status.toNumber(), Status.PartiallyPaid, 'Info status is wrong');
       }));
 
     it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
@@ -275,7 +293,7 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(details.paidAmount.toString(), web3.utils.toWei('100'), 'Invoice paid amount is wrong');
       }));
 
-    it('Should pay a part of invoice 0', () => instances.Invoicing.payInvoice(
+    it('Should pay the rest of invoice 0', () => instances.Invoicing.payInvoice(
       0,
       web3.utils.toWei('900'), {
       from: customer.address,
@@ -283,7 +301,7 @@ contract('Testing Invoicing', function (accounts) {
 
     it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
-        assert.equal(info.status, 3, 'Info status is wrong');
+        assert.equal(info.status.toNumber(), Status.Paid, 'Info status is wrong');
       }));
 
     it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
@@ -301,6 +319,22 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(deposit.toString(), web3.utils.toWei('0'), 'Merchant deposit is wrong');
       }));
 
-    
+    it('Should refund the customer', () => instances.Invoicing.refundCustomer(
+      0,
+      customerEin,
+      web3.utils.toWei('100'), {
+        from: merchant.address,
+      },
+    ));
+
+    it('Should get the new status of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
+      .then((info) => {
+        assert.equal(info.status.toNumber(), Status.PartiallyRefunded, 'Info status is wrong');
+      }));
+
+    it('Should get the new details of invoice 0', () => instances.Invoicing.getInvoiceDetails(0)
+      .then((details) => {
+        assert.equal(details.refundedAmount.toString(), web3.utils.toWei('100'), 'Invoice refunded amount is wrong');
+      }));
   })
 })
