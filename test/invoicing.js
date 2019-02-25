@@ -28,6 +28,7 @@ let customer;
 let customerEin;
 
 const invoice = {
+  id: 'i2019',
   customers: [5, 6],
   amount: web3.utils.toWei('500'),
   allowPartialPayment: true,
@@ -184,6 +185,7 @@ contract('Testing Invoicing', function (accounts) {
       }));
 
     it('Should create a draft invoice', () => instances.Invoicing.createDraftInvoice(
+      invoice.id,
       invoice.customers,
       invoice.amount,
       invoice.allowPartialPayment,
@@ -202,6 +204,7 @@ contract('Testing Invoicing', function (accounts) {
     it('Should get the info of invoice 0', () => instances.Invoicing.getInvoiceInfo(0)
       .then((info) => {
         assert.containsAllKeys(info, ['status', 'date', 'merchant', 'customers'], 'Invoice info is wrong');
+        assert.equal(info.id, invoice.id, 'Info id is wrong');
         assert.equal(info.status.toNumber(), Status.Draft, 'Info status is wrong');
         assert.isString(info.date.toString(), 'Info date is wrong');
         assert.equal(info.merchant.toString(), merchantEin.toString(), 'Info merchant is wrong');

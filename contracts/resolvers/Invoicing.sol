@@ -23,6 +23,7 @@ contract Invoicing is SnowflakeResolver {
 
     /* This defines the invoices */
     struct Invoice {
+        string id;
         Status status;
         uint256 date;
         uint256 merchant;
@@ -58,7 +59,11 @@ contract Invoicing is SnowflakeResolver {
      * @param merchant The ein of the merchant
      * @param customers the ein of the customers
      */
-    event LogInvoiceCreated(uint256 invoiceId, uint256 indexed merchant, uint256[] customers);
+    event LogInvoiceCreated(
+        uint256 invoiceId,
+        uint256 indexed merchant,
+        uint256[] customers
+    );
 
     /**
      * @dev Emitted when a payment is made
@@ -93,6 +98,7 @@ contract Invoicing is SnowflakeResolver {
      * @param term The term of payment, in days or a timestamp
      */
     function createDraftInvoice(
+        string memory id,
         uint256[] memory customers,
         uint256 amount,
         bool allowPartialPayment,
@@ -108,6 +114,7 @@ contract Invoicing is SnowflakeResolver {
 
         uint256 invoiceId = invoices.push(
             Invoice({
+                id: id,
                 status: Status.Draft,
                 date: now,
                 merchant: ein,
@@ -126,7 +133,7 @@ contract Invoicing is SnowflakeResolver {
 
         merchantsToInvoices[ein].push(invoiceId);
 
-        emit LogInvoiceCreated(0, ein, customers);
+        emit LogInvoiceCreated(invoiceId, ein, customers);
     }
 
     /**
@@ -351,15 +358,17 @@ contract Invoicing is SnowflakeResolver {
     /**
      * @dev Gets invoice info
      * @param invoiceId The id of the invoice
-     * @return The status, date, merchant and customers of an invoice
+     * @return The id, status, date, merchant and customers of an invoice
      */
     function getInvoiceInfo(uint256 invoiceId) public view returns (
+        string memory id,
         Status status,
         uint256 date,
         uint256 merchant,
         uint256[] memory customers
     ) {
         return (
+            invoices[invoiceId].id,
             invoices[invoiceId].status,
             invoices[invoiceId].date,
             invoices[invoiceId].merchant,
