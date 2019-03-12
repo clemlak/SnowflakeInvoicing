@@ -340,6 +340,14 @@ contract('Testing Invoicing', function (accounts) {
         assert.equal(details.refundedAmount.toString(), web3.utils.toWei('100'), 'Invoice refunded amount is wrong');
       }));
 
+    it('Should create a new dispute for invoice 0', () => instances.Invoicing.openDispute(0, 'Test', {
+      from: customer.address,
+    }));
+
+    it('Should close the dispute for invoice 0', () => instances.Invoicing.closeDispute(0, {
+      from: merchant.address,
+    }));
+
     it('Should refund the rest of the amount to the customer', () => instances.Invoicing.refundCustomer(
       0,
       customerEin,
