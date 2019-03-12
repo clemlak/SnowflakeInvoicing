@@ -330,7 +330,7 @@ contract Invoicing is SnowflakeResolver {
 
         require(
             includes(invoices[invoiceId].customers, customer) == true,
-            "The ein does not correspond to a customer"
+            "The sender is not a customer"
         );
 
         invoices[invoiceId].refundedAmount = SafeMath.add(invoices[invoiceId].refundedAmount, amount);
@@ -368,11 +368,11 @@ contract Invoicing is SnowflakeResolver {
     }
 
     /**
-     * @dev Starts a dispute
+     * @dev Opens a dispute
      * @param invoiceId The id of the invoice (given by the smart-contract)
      * @param details The details of the dispute
      */
-    function startDispute(uint256 invoiceId, string details) public {
+    function openDispute(uint256 invoiceId, string memory details) public {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
 
@@ -380,8 +380,8 @@ contract Invoicing is SnowflakeResolver {
         require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
 
         require(
-            invoices[invoiceId].buyer == ein,
-            "Sender is not the buyer"
+            includes(invoices[invoiceId].customers, ein) == true,
+            "The sender is not a customer"
         );
 
         require(
@@ -408,7 +408,7 @@ contract Invoicing is SnowflakeResolver {
         require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
 
         require(
-            invoices[invoiceId].seller == ein,
+            invoices[invoiceId].merchant == ein,
             "Sender is not the seller"
         );
 
