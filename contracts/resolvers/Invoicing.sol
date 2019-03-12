@@ -1,4 +1,4 @@
-/* solhint-disable no-empty-blocks */
+/* solhint-disable no-empty-blocks, not-rely-on-time */
 
 pragma solidity 0.5.0;
 
@@ -22,6 +22,7 @@ contract Invoicing is SnowflakeResolver {
     enum Terms { DueOnReceipt, DueOnDate, NoDueDate, NetD }
 
     /* This defines the invoices */
+    /* TODO: Tight pack this struct */
     struct Invoice {
         string id;
         Status status;
@@ -39,6 +40,7 @@ contract Invoicing is SnowflakeResolver {
         string note;
     }
 
+    /* We store our invoices here */
     Invoice[] private invoices;
 
     /* We link the merchants to their invoices */
@@ -46,12 +48,6 @@ contract Invoicing is SnowflakeResolver {
 
     /* We link the customers to their invoices */
     mapping (uint256 => uint256[]) public customersToInvoices;
-
-    /* We keep track of the payments here (invoiceId => ein => amount) */
-    mapping (uint256 => mapping (uint256 => uint256)) public payments;
-
-    /* We keep track of the refunds here (invoiceId => ein => amount) */
-    mapping (uint256 => mapping (uint256 => uint256)) public refunds;
 
     /**
      * @dev Emitted when an invoice is created
@@ -67,7 +63,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Emitted when a payment is made
-     * @param invoiceId The id of the new invoice
+     * @param invoiceId The id of the invoice
      * @param customer The ein of the customer
      * @param amount The paid amount
      */
@@ -75,11 +71,19 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Emitted when a refund is made
-     * @param invoiceId The id of the new invoice
+     * @param invoiceId The id of the invoice
      * @param customer The ein of the customer
      * @param amount The refunded amount
      */
     event LogRefund(uint256 invoiceId, uint256 customer, uint256 amount);
+
+    /**
+     * @dev Emitted when a dispute is created
+     * @param invoiceId The id of the invoice
+     * @param customer The ein of the customer
+     * @param details The details of the dispute
+     */
+    event LogDisputeCreated(uint256 invoiceId, uint256 customer, string details);
 
     constructor (address snowflakeAddress) public
         SnowflakeResolver("Invoicing", "Create invoices", snowflakeAddress, false, false) {}
@@ -90,12 +94,13 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Creates a new draft invoice
-     * @param customers The ein of the customers
+     * @param id A custom id for the invoice
+     * @param customers The ein of the customers (in an array)
      * @param amount The amount of the invoice
      * @param allowPartialPayment If partial payment is allowed
      * @param minimumAmountDue The minimum amount for a payment
-     * @param paymentTerm The type of term of payment
-     * @param term The term of payment, in days or a timestamp
+     * @param paymentTerm The type of term of payment (DueOnReceipt, DueOnDate, NoDueDate, NetD)
+     * @param term The term of payment (in days or a timestamp)
      */
     function createDraftInvoice(
         string memory id,
@@ -166,7 +171,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Updates the payment data of an invoice
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      * @param amount The amount of the invoice
      * @param allowPartialPayment If partial payment is allowed
      * @param minimumAmountDue The minimum amount for a payment
@@ -212,7 +217,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Validates an invoice (from draft to unpaid)
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      */
     function validateInvoice(uint256 invoiceId) public {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
@@ -239,6 +244,11 @@ contract Invoicing is SnowflakeResolver {
         invoices[invoiceId].status = Status.Unpaid;
     }
 
+    /**
+     * @dev Pays an invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
+     * @param amount The amount used to pay
+     */
     function payInvoice(uint256 invoiceId, uint256 amount) public {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
         IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
@@ -278,7 +288,7 @@ contract Invoicing is SnowflakeResolver {
 
         invoices[invoiceId].paidAmount = SafeMath.add(amount, invoices[invoiceId].paidAmount);
 
-        if (invoices[invoiceId].paidAmount == invoices[invoiceId].amount) {
+        if (invoices[invoiceId].paidAmount >= invoices[invoiceId].amount) {
             invoices[invoiceId].status = Status.Paid;
         } else {
             if (invoices[invoiceId].status == Status.Unpaid) {
@@ -293,7 +303,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Refunds a customer
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      * @param customer The ein of the customer
      * @param amount The amount to refund
      */
@@ -312,8 +322,10 @@ contract Invoicing is SnowflakeResolver {
         require(
             invoices[invoiceId].status == Status.PartiallyPaid
             || invoices[invoiceId].status == Status.Paid
-            || invoices[invoiceId].status == Status.PartiallyRefunded,
-            "This invoice cannot be paid anymore"
+            || invoices[invoiceId].status == Status.PartiallyRefunded
+            || invoices[invoiceId].status == Status.Canceled
+            || invoices[invoiceId].status == Status.Disputed,
+            "This invoice cannot be refunded at this time"
         );
 
         require(
@@ -323,7 +335,7 @@ contract Invoicing is SnowflakeResolver {
 
         invoices[invoiceId].refundedAmount = SafeMath.add(invoices[invoiceId].refundedAmount, amount);
 
-        if (invoices[invoiceId].refundedAmount == invoices[invoiceId].amount) {
+        if (invoices[invoiceId].refundedAmount >= invoices[invoiceId].amount) {
             invoices[invoiceId].status = Status.Refunded;
         } else {
             if (invoices[invoiceId].status != Status.PartiallyRefunded) {
@@ -338,7 +350,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Cancels an invoice
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      */
     function cancelInvoice(uint256 invoiceId) public {
         SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
@@ -356,8 +368,71 @@ contract Invoicing is SnowflakeResolver {
     }
 
     /**
+     * @dev Starts a dispute
+     * @param invoiceId The id of the invoice (given by the smart-contract)
+     * @param details The details of the dispute
+     */
+    function startDispute(uint256 invoiceId, string details) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].buyer == ein,
+            "Sender is not the buyer"
+        );
+
+        require(
+            invoices[invoiceId].status == Status.PartiallyPaid
+            || invoices[invoiceId].status == Status.Paid
+            || invoices[invoiceId].status == Status.PartiallyRefunded,
+            "A dispute cannot be created at this time"
+        );
+
+        invoices[invoiceId].status = Status.Disputed;
+
+        emit LogDisputeCreated(invoiceId, ein, details);
+    }
+
+    /**
+     * @dev Closes a dispute
+     * @param invoiceId The id of the invoice (given by the smart-contract)
+     */
+    function closeDispute(uint256 invoiceId) public {
+        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        IdentityRegistryInterface identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+
+        uint256 ein = identityRegistry.getEIN(msg.sender);
+        require(identityRegistry.isResolverFor(ein, address(this)), "The EIN has not set this resolver.");
+
+        require(
+            invoices[invoiceId].seller == ein,
+            "Sender is not the seller"
+        );
+
+        require(
+            invoices[invoiceId].status == Status.Disputed,
+            "The invoice is not disputed"
+        );
+
+        if (invoices[invoiceId].refundedAmount >= invoices[invoiceId].amount) {
+            invoices[invoiceId].status = Status.Refunded;
+        } else if (invoices[invoiceId].refundedAmount < invoices[invoiceId].amount
+        && invoices[invoiceId].refundedAmount > 0) {
+            invoices[invoiceId].status = Status.PartiallyRefunded;
+        } else if (invoices[invoiceId].refundedAmount == 0
+        && invoices[invoiceId].paidAmount == invoices[invoiceId].amount) {
+            invoices[invoiceId].status = Status.Paid;
+        } else {
+            invoices[invoiceId].status = Status.PartiallyPaid;
+        }
+    }
+
+    /**
      * @dev Gets invoice info
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      * @return The id, status, date, merchant and customers of an invoice
      */
     function getInvoiceInfo(uint256 invoiceId) public view returns (
@@ -378,7 +453,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Gets invoice details
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      * @return The amount, paidAmount, refundedAmount, allowPartialPayment, paymentTerm and term of the invoice
      */
     function getInvoiceDetails(uint256 invoiceId) public view returns (
@@ -403,7 +478,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Gets invoice additional details
-     * @param invoiceId The id of the invoice
+     * @param invoiceId The id of the invoice (given by the smart-contract)
      * @return The additionalTerms and note of the invoice
      */
     function getInvoicesAdditionalDetails(uint256 invoiceId) public view returns (
@@ -418,7 +493,7 @@ contract Invoicing is SnowflakeResolver {
 
     /**
      * @dev Returns the invoices of a merchant
-     * @param ein The ein of the merechant
+     * @param ein The ein of the merchant
      * @return The id of the invoices
      */
     function getInvoicesFromMerchant(uint256 ein) public view returns (uint256[] memory) {
@@ -434,6 +509,11 @@ contract Invoicing is SnowflakeResolver {
         return customersToInvoices[ein];
     }
 
+    /**
+     * @dev Checks if a value exists within an array
+     * @param a The array to inspect
+     * @param b The value to expect
+     */
     function includes(uint256[] memory a, uint256 b) internal pure returns (bool) {
         for (uint256 i = 0; i < a.length; i += 1) {
             if (a[i] == b) {
