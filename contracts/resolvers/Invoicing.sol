@@ -13,6 +13,7 @@ import "../zeppelin/math/SafeMath.sol";
  * @title Invoicing
  * @notice Create invoices through Snowflake
  * @dev This contract is the base of the dapp
+ * @author clemlak
  */
 contract Invoicing is SnowflakeResolver {
     /* Invoices can have several status, but only one at a time */
@@ -240,6 +241,10 @@ contract Invoicing is SnowflakeResolver {
             invoices[invoiceId].customers.length > 0,
             "This invoice does not have any customer"
         );
+
+        for (uint256 i = 0; i < invoices[invoiceId].customers.length; i += 1) {
+            customersToInvoices[invoices[invoiceId].customers[i]].push(invoiceId);
+        }
 
         invoices[invoiceId].status = Status.Unpaid;
     }
@@ -496,7 +501,7 @@ contract Invoicing is SnowflakeResolver {
      * @param ein The ein of the merchant
      * @return The id of the invoices
      */
-    function getInvoicesFromMerchant(uint256 ein) public view returns (uint256[] memory) {
+    function getInvoicesFromMerchant(uint256 ein) public view returns (uint256[] memory invoicesId) {
         return merchantsToInvoices[ein];
     }
 
@@ -505,7 +510,7 @@ contract Invoicing is SnowflakeResolver {
      * @param ein The ein of the customer
      * @return The id of the invoices
      */
-    function getInvoicesFromCustomer(uint256 ein) public view returns (uint256[] memory) {
+    function getInvoicesFromCustomer(uint256 ein) public view returns (uint256[] memory invoicesId) {
         return customersToInvoices[ein];
     }
 
