@@ -38,7 +38,7 @@ function createDraftInvoice(
 
 Updates the payment data of an invoice (only if the invoice is still a draft).
 
-```javascript=
+```javascript
 function updateInvoiceCustomers(
     uint256 invoiceId,
     uint256[] memory customers
@@ -55,7 +55,7 @@ function updateInvoiceCustomers(
 
 Updates the payment data of an invoice (only if the invoice is still a draft).
 
-```javascript=
+```javascript
 function updateInvoicePayment(
     uint256 invoiceId,
     uint256 amount,
@@ -84,7 +84,7 @@ function updateInvoicePayment(
 
 Validates an invoice (only if the invoice is still a draft).
 
-```javascript=
+```javascript
 function validateInvoice(uint256 invoiceId) public
 ```
 
@@ -97,7 +97,7 @@ function validateInvoice(uint256 invoiceId) public
 
 Pays an invoice.
 
-```javascript=
+```javascript
 function payInvoice(uint256 invoiceId, uint256 amount) public
 ```
 
@@ -111,7 +111,7 @@ function payInvoice(uint256 invoiceId, uint256 amount) public
 
 Refunds a customer.
 
-```javascript=
+```javascript
 function refundCustomer(
     uint256 invoiceId,
     uint256 customer,
@@ -130,7 +130,7 @@ public
 
 Cancels an invoice.
 
-```javascript=
+```javascript
 function cancelInvoice(uint256 invoiceId) public
 ```
 
@@ -143,7 +143,7 @@ function cancelInvoice(uint256 invoiceId) public
 
 Opens a dispute.
 
-```javascript=
+```javascript
 function openDispute(uint256 invoiceId, string memory details)
 ```
 
@@ -157,7 +157,7 @@ function openDispute(uint256 invoiceId, string memory details)
 
 Closes a dispute.
 
-```javascript=
+```javascript
 function closeDispute(uint256 invoiceId) public
 ```
 
@@ -170,7 +170,7 @@ function closeDispute(uint256 invoiceId) public
 
 Returns the info of an invoice.
 
-```javascript=
+```javascript
 function getInvoiceInfo(uint256 invoiceId) public
 ```
 
@@ -192,7 +192,7 @@ function getInvoiceInfo(uint256 invoiceId) public
 
 Returns the details of the invoice.
 
-```javascript=
+```javascript
 function getInvoiceDetails(uint256 invoiceId) public
 ```
 
@@ -216,7 +216,7 @@ function getInvoiceDetails(uint256 invoiceId) public
 
 Returns the additional details of the invoice.
 
-```javascript=
+```javascript
 function getInvoicesAdditionalDetails(uint256 invoiceId) public
 ```
 
@@ -235,7 +235,7 @@ function getInvoicesAdditionalDetails(uint256 invoiceId) public
 
 Returns the id of all the invoices created by a merchant.
 
-```javascript=
+```javascript
 function getInvoicesFromMerchant(uint256 ein) public
 ```
 
@@ -253,7 +253,7 @@ function getInvoicesFromMerchant(uint256 ein) public
 
 Returns the id of all the invoices linked to a customer.
 
-```javascript=
+```javascript
 function getInvoicesFromCustomer(uint256 ein) public
 ```
 
