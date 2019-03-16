@@ -11,7 +11,7 @@ The resolver is located at `contracts/resolvers/Invoicing.sol`.
 
 Creates a new draft invoice.
 
-```javascript=
+```javascript
 function createDraftInvoice(
     string memory id,
     uint256[] memory customers,
